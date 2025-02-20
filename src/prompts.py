@@ -33,11 +33,11 @@ For wallet operations, supported types include:
 - get-token-by-ticker: Get token address
 - swap: Swap tokens
 
-For wallet operations, format the result as the following JSON structure:
+For wallet operations, format the result as the following JSON structure(Do not include markdown format or code blocks):
 {
     "action": "operation_type",
     "parameters": {
-        "from_address": "sender_wallet_address",
+        "from_address": "your_wallet_address",
         "to_address": "recipient_address",
         "token_address": "token_address(optional)",
         "amount": "amount(optional)",
@@ -45,5 +45,4 @@ For wallet operations, format the result as the following JSON structure:
     }
 }
 
-For transfer operations, ensure to include from_address, to_address, amount and token_name.
 For non-wallet queries (like general questions, greetings, or conversations), respond with a natural text answer instead of JSON."""

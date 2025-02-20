@@ -77,7 +77,7 @@ class DeepSeekConnection(BaseConnection):
                 raise DeepSeekConfigurationError("DeepSeek API key not found in environment")
             self._client = OpenAI(
                 api_key=api_key,
-                base_url="https://api.deepseek.com/v1"  # 确保使用正确的 base_url
+                base_url="https://api.ppinfra.com/v3/openai"  # Updated base URL for PIPO
             )
         return self._client
 
@@ -107,7 +107,7 @@ class DeepSeekConnection(BaseConnection):
             # Validate the API key by trying to list models
             client = OpenAI(
                 api_key=api_key,
-                base_url="https://api.deepseek.com/v1"
+                base_url="https://api.ppinfra.com/v3/openai"
             )
             client.models.list()
 
@@ -129,7 +129,7 @@ class DeepSeekConnection(BaseConnection):
 
             client = OpenAI(
                 api_key=api_key,
-                base_url="https://api.deepseek.com/v1"
+                base_url="https://api.ppinfra.com/v3/openai"
             )
             client.models.list()
             return True
@@ -153,11 +153,9 @@ class DeepSeekConnection(BaseConnection):
             else:
                 connection_manager = kwargs.get("connection_manager")
             
-            if not model:
-                model = self.config["model"]
+            # 强制使用 PIPO 的模型
+            model = "deepseek/deepseek-v3"
             
-            # print(f"\nUsing model: {model}")
-
             # 使用钱包操作系统提示
             system_prompt = WALLET_INTENT_PROMPT
 
@@ -171,12 +169,10 @@ class DeepSeekConnection(BaseConnection):
                 "response_format": {"type": "json_object"}
             }
             
-            print(f"\nRequest data: {request_data}")
-
-            completion = client.chat.completions.create(**request_data)
+            completion = client.chat.completions.create(**request_data)    
             intent = completion.choices[0].message.content
 
-            print(f"\nIntent: {intent}")
+            # print(f"\nIntent: {intent}")
 
             # 解析意图并执行相应操作
             try:
@@ -185,6 +181,7 @@ class DeepSeekConnection(BaseConnection):
                     intent_data = json.loads(intent)
                     # If successfully parsed as JSON, it's a wallet operation
                     action = intent_data.get("action")
+                    print(f"\nAction: {action}")
                     parameters = intent_data.get("parameters", {})
 
                     if not connection_manager:
@@ -241,6 +238,7 @@ class DeepSeekConnection(BaseConnection):
 
                     # Add transfer handler in generate_text method after get-token-by-ticker handler
                     elif action == "transfer":
+                        print(f"\nTransfer action: {parameters}")
                         # 检查必要参数
                         if not parameters.get("to_address"):
                             return "Recipient address is required for transfer"
