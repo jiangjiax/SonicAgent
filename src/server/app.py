@@ -74,6 +74,17 @@ class ServerState:
                 self.agent_task.join(timeout=5)
             self.agent_running = False
 
+    def _load_agent_from_file(self, name: str):
+        """Load agent from file and store in CLI instance"""
+        try:
+            self.cli._load_agent_from_file(name)
+            if not self.cli.agent:
+                raise ValueError(f"Failed to load agent {name}")
+            return True
+        except Exception as e:
+            logger.error(f"Error loading agent: {e}")
+            raise
+
 class ZerePyServer:
     def __init__(self):
         self.app = FastAPI(title="ZerePy Server")
@@ -118,11 +129,14 @@ class ZerePyServer:
         async def load_agent(name: str):
             """Load a specific agent"""
             try:
-                self.state.cli._load_agent_from_file(name)
-                return {
-                    "status": "success",
-                    "agent": name
-                }
+                success = self.state._load_agent_from_file(name)
+                if success:
+                    return {
+                        "status": "success",
+                        "agent": name
+                    }
+                else:
+                    raise HTTPException(status_code=400, detail="Failed to load agent")
             except Exception as e:
                 raise HTTPException(status_code=400, detail=str(e))
 
