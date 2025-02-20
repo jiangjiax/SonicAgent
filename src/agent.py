@@ -142,7 +142,11 @@ class ZerePyAgent:
         return self.connection_manager.perform_action(
             connection_name=self.model_provider,
             action_name="generate-text",
-            params=[prompt, system_prompt]
+            params={
+                "prompt": prompt,
+                "system_prompt": system_prompt,
+                "connection_manager": self.connection_manager
+            }
         )
 
     def perform_action(self, connection: str, action: str, **kwargs) -> None:
@@ -217,3 +221,39 @@ class ZerePyAgent:
         except KeyboardInterrupt:
             logger.info("\n🛑 Agent loop stopped by user.")
             return
+
+    def handle_wallet_query(self, text):
+        """处理钱包查询请求"""
+        try:
+            # 1. 使用 Deepseek 解析意图
+            system_prompt = """你是一个专业的 Web3 钱包操作助手。你需要将用户的自然语言指令解析为标准的钱包操作意图。
+            
+            支持的操作类型包括：
+            - get-balance: 查询余额
+            - transfer: 转账代币
+            - query-transaction: 查询交易
+            - list-tokens: 查看代币列表
+            - estimate-gas: 获取 Gas 估算
+            
+            请将结果格式化为以下 JSON 结构：
+            {
+                "action": "操作类型",
+                "parameters": {
+                    "address": "钱包地址",
+                    "token_address": "代币地址(可选)",
+                    "amount": "数量(可选)",
+                    "to_address": "接收地址(可选)"
+                }
+            }"""
+            
+            intent = self.prompt_llm(text, system_prompt)
+            
+            # 2. 根据意图执行相应操作
+            if intent["action"] == "get-balance":
+                address = intent["parameters"]["address"]
+                return self.connection_manager.get_balance(address)
+            
+            # ... 处理其他类型的操作 ...
+            
+        except Exception as e:
+            return f"处理请求时出错: {str(e)}"

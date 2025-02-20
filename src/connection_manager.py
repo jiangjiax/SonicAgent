@@ -21,6 +21,7 @@ from src.connections.ethereum_connection import EthereumConnection
 from src.connections.together_connection import TogetherAIConnection
 from src.connections.evm_connection import EVMConnection
 from src.connections.perplexity_connection import PerplexityConnection
+from src.connections.deepseek_connection import DeepSeekConnection
 
 logger = logging.getLogger("connection_manager")
 
@@ -73,6 +74,8 @@ class ConnectionManager:
             return EVMConnection
         elif class_name == "perplexity":
             return PerplexityConnection
+        elif class_name == "deepseek":
+            return DeepSeekConnection
         return None
 
     def _register_connection(self, config_dic: Dict[str, Any]) -> None:
@@ -172,50 +175,45 @@ class ConnectionManager:
         """Perform an action on a specific connection with given parameters"""
         try:
             connection = self.connections[connection_name]
-
+            
             if not connection.is_configured():
-                logging.error(
-                    f"\nError: Connection '{connection_name}' is not configured"
-                )
+                logging.error(f"\nError: Connection '{connection_name}' is not configured")
                 return None
-
+            
             if action_name not in connection.actions:
-                logging.error(
-                    f"\nError: Unknown action '{action_name}' for connection '{connection_name}'"
-                )
+                logging.error(f"\nError: Unknown action '{action_name}' for connection '{connection_name}'")
                 return None
-
+            
             action = connection.actions[action_name]
-
-            # Convert list of params to kwargs dictionary, handling both required and optional params
+            
+            # 构建参数字典
             kwargs = {}
             param_index = 0
-
-            # Add provided parameters up to the number provided
+            
+            # 添加提供的参数
             for i, param in enumerate(action.parameters):
                 if param_index < len(params):
                     kwargs[param.name] = params[param_index]
                     param_index += 1
-
-            # Validate all required parameters are present
+                
+            # 添加 connection_manager 引用
+            kwargs["connection_manager"] = self
+            
+            # 验证所需参数
             missing_required = [
                 param.name
                 for param in action.parameters
                 if param.required and param.name not in kwargs
             ]
-
+            
             if missing_required:
-                logging.error(
-                    f"\nError: Missing required parameters: {', '.join(missing_required)}"
-                )
+                logging.error(f"\nError: Missing required parameters: {', '.join(missing_required)}")
                 return None
-
+            
             return connection.perform_action(action_name, kwargs)
-
+            
         except Exception as e:
-            logging.error(
-                f"\nAn error occurred while trying action {action_name} for {connection_name} connection: {e}"
-            )
+            logging.error(f"\nAn error occurred while trying action {action_name} for {connection_name} connection: {e}")
             return None
 
     def get_model_providers(self) -> List[str]:
