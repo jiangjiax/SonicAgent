@@ -244,10 +244,6 @@ class DeepSeekConnection(BaseConnection):
                         # 检查必要参数
                         if not parameters.get("to_address"):
                             return "Recipient address is required for transfer"
-                        if not parameters.get("from_address"):
-                            return "Sender address is required for transfer"
-                        if parameters.get("from_address") == "" or parameters.get("from_address") == "sender_wallet_address" or parameters.get("from_address") == "your_wallet_address":
-                            return "Sender address is required for transfer"
                         if not parameters.get("amount"):
                             return "Transfer amount is required"
                         
