@@ -53,7 +53,8 @@ class DeepSeekConnection(BaseConnection):
                 parameters=[
                     ActionParameter("prompt", True, str, "The input prompt for text generation"),
                     ActionParameter("system_prompt", True, str, "System prompt to guide the model"),
-                    ActionParameter("model", False, str, "Model to use for generation")
+                    ActionParameter("model", False, str, "Model to use for generation"),
+                    ActionParameter("temperature", False, float, "Controls randomness in the response (0.0 to 1.0)")
                 ],
                 description="Generate text using DeepSeek models"
             ),
@@ -141,7 +142,7 @@ class DeepSeekConnection(BaseConnection):
                 logger.debug(f"Configuration check failed: {e}")
             return False
 
-    def generate_text(self, prompt: str = None, system_prompt: str = None, model: str = None, **kwargs) -> str:
+    def generate_text(self, prompt: str = None, system_prompt: str = None, model: str = None, temperature: float = 0.5, **kwargs) -> str:
         """Generate text using DeepSeek models"""
         try:
             client = self._get_client()
@@ -151,6 +152,7 @@ class DeepSeekConnection(BaseConnection):
                 params = kwargs["params"]
                 prompt = params.get("prompt", prompt)
                 system_prompt = params.get("system_prompt", system_prompt)
+                temperature = params.get("temperature", temperature)
                 connection_manager = params.get("connection_manager")
             else:
                 connection_manager = kwargs.get("connection_manager")
@@ -168,6 +170,7 @@ class DeepSeekConnection(BaseConnection):
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
                 ],
+                "temperature": temperature,
                 "response_format": {"type": "json_object"}
             }
             
