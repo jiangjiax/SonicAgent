@@ -6,6 +6,8 @@ from dotenv import load_dotenv, set_key
 from openai import OpenAI
 from src.connections.base_connection import BaseConnection, Action, ActionParameter
 from src.prompts import WALLET_INTENT_PROMPT
+from web3 import Web3
+from src.constants.abi import ERC20_ABI
 
 logger = logging.getLogger("connections.deepseek_connection")
 
@@ -238,7 +240,6 @@ class DeepSeekConnection(BaseConnection):
 
                     # Add transfer handler in generate_text method after get-token-by-ticker handler
                     elif action == "transfer":
-                        print(f"\nTransfer action: {parameters}")
                         # 检查必要参数
                         if not parameters.get("to_address"):
                             return "Recipient address is required for transfer"
@@ -249,16 +250,56 @@ class DeepSeekConnection(BaseConnection):
                         if "token_name" not in parameters:
                             parameters["token_name"] = "S"
                         
+                        # 获取 sonic connection
+                        sonic_connection = connection_manager.connections.get("sonic")
+                        if not sonic_connection:
+                            return "Sonic connection not found. Please check your configuration."
+                        
                         # 如果不是原生代币，需要获取代币地址
                         token_address = parameters.get("token_address")
                         if parameters["token_name"] != "S":
-                            sonic_connection = connection_manager.connections.get("sonic")
-                            if not sonic_connection:
-                                raise ValueError("Sonic connection not found")
-                                
                             token_address = sonic_connection.get_token_by_ticker(parameters["token_name"])
                             if not token_address:
                                 return f"Could not find address for token {parameters['token_name']}"
+                            # print(f"Got token address: {token_address}")  # 打印获取到的代币地址
+
+                        # 获取代币精度和处理金额
+                        try:
+                            if parameters["token_name"] == "S":
+                                # 原生代币处理
+                                token_address = None
+                                decimals = 18
+                            else:
+                                # ERC20代币处理
+                                # print(f"Web3 connected: {sonic_connection._web3.is_connected()}")
+                                # print(f"Using token address: {token_address}")
+                                # print(f"Current network chain ID: {sonic_connection._web3.eth.chain_id}")  # 添加链 ID 检查
+                                # print(f"Current RPC URL: {sonic_connection._web3.provider.endpoint_uri}")  # 添加 RPC URL 检查
+                                
+                                contract = sonic_connection._web3.eth.contract(
+                                    address=Web3.to_checksum_address(token_address),
+                                    abi=ERC20_ABI
+                                )
+                                # print("Contract created successfully")
+                                
+                                try:
+                                    # 先尝试获取代币符号，这通常是一个较轻量的调用
+                                    symbol = contract.functions.symbol().call()
+                                    # print(f"Token symbol: {symbol}")
+                                    
+                                    decimals = contract.functions.decimals().call()
+                                    # print(f"Got decimals: {decimals}")
+                                except Exception as e:
+                                    # print(f"Failed to call contract: {e}")
+                                    # 如果获取精度失败，记录错误并使用默认值
+                                    logger.error(f"Failed to get decimals for token {parameters['token_name']}: {e}")
+                                    logger.error(f"Full error details: {str(e)}")
+                                    decimals = 18
+                        except Exception as e:
+                            logger.error(f"Failed to get token decimals: {e}")
+                            logger.error(f"Token address: {token_address}")
+                            logger.error(f"Token name: {parameters['token_name']}")
+                            decimals = 18  # 使用默认精度
                         
                         # 准备交易数据
                         transaction_data = {
@@ -267,6 +308,7 @@ class DeepSeekConnection(BaseConnection):
                             "amount": parameters["amount"],
                             "token_address": token_address,
                             "token_name": parameters["token_name"],
+                            "decimals": decimals,
                             "requires_signature": True
                         }
                         
@@ -274,7 +316,7 @@ class DeepSeekConnection(BaseConnection):
                         return {
                             "action": "transfer",
                             "transaction_data": transaction_data,
-                            "message": f"Please confirm transfer of {parameters['amount']} {parameters['token_name']} from {parameters['from_address']} to {parameters['to_address']}"
+                            "message": f"Please confirm transfer of {parameters['amount']} {parameters['token_name']} from your wallet address to {parameters['to_address']}"
                         }
 
                     # For other wallet operations, return the intent JSON

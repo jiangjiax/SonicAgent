@@ -44,5 +44,4 @@ For wallet operations, format the result as the following JSON structure(Do not 
         "token_name": "S"
     }
 }
-
-For non-wallet queries (like general questions, greetings, or conversations), respond with a natural text answer instead of JSON."""
+"""
