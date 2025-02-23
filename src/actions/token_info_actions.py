@@ -22,10 +22,7 @@ class TokenInfoHandler:
             # 格式化输出
             result = "🔥 Hot Tokens on Sonic Chain\n\n"
             for i, token in enumerate(hot_tokens, 1):
-                result += f"{i}. {token['name']} ({token['symbol']})\n"
-                result += f"   Price: ${token['price']}\n"
-                result += f"   24h Change: {token['change_24h']}%\n"
-                result += f"   Volume (24h): ${token['volume_24h']}\n\n"
+                result += TokenInfoHandler._format_token_info(i, token)
             
             return result
         except Exception as e:
@@ -136,14 +133,6 @@ class TokenInfoHandler:
                 logger.info("Returning cached data after API request failure")
                 return TokenInfoHandler._cache['hot_tokens'][:limit]
             raise Exception(f"Failed to get hot tokens: {e}")
-
-    @staticmethod
-    def _format_hot_tokens_response(hot_tokens: List[Dict[str, Any]]) -> str:
-        """Format hot tokens response"""
-        result = "🔥 Sonic链上24小时热门代币:\n\n"
-        for i, token in enumerate(hot_tokens, 1):
-            result += TokenInfoHandler._format_token_info(i, token)
-        return result
 
     @staticmethod
     def _format_token_info(index: int, token: Dict[str, Any]) -> str:
