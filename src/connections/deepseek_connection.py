@@ -92,6 +92,13 @@ class DeepSeekConnection(BaseConnection):
                 name="get-supported-exchanges",
                 parameters=[],
                 description="Get exchanges supporting Sonic chain tokens"
+            ),
+            "get-hot-tokens-json": Action(
+                name="get-hot-tokens-json",
+                parameters=[
+                    ActionParameter("limit", False, int, "Number of hot tokens to return")
+                ],
+                description="Get hot tokens on Sonic chain in last 24h"
             )
         }
 
@@ -211,6 +218,7 @@ class DeepSeekConnection(BaseConnection):
                     "get-token-by-ticker": WalletActionHandler.handle_get_token_by_ticker,
                     "transfer": WalletActionHandler.handle_transfer,
                     "get-hot-tokens": lambda p, cm: TokenInfoHandler.handle_hot_tokens(5),
+                    "get-hot-tokens-json": lambda p, cm: TokenInfoHandler.handle_hot_tokens_json(p.get("limit", 5)),
                     "check-token-security": WalletActionHandler.handle_check_token_security
                 }
 
@@ -266,6 +274,11 @@ class DeepSeekConnection(BaseConnection):
         if action_name not in self.actions:
             raise KeyError(f"Unknown action: {action_name}")
 
+        # 直接处理 get-hot-tokens-json 操作
+        if action_name == "get-hot-tokens-json":
+            limit = kwargs.get("limit", 5)
+            return TokenInfoHandler.get_hot_tokens_json(limit)
+
         action = self.actions[action_name]
         errors = action.validate_params(kwargs)
         if errors:
@@ -274,3 +287,15 @@ class DeepSeekConnection(BaseConnection):
         method_name = action_name.replace('-', '_')
         method = getattr(self, method_name)
         return method(**kwargs)
+
+    def get_hot_tokens_json(self, limit: int = 5) -> Dict[str, Any]:
+        """Get hot tokens in JSON format"""
+        try:
+            # 调用 TokenInfoHandler 的方法
+            return TokenInfoHandler.get_hot_tokens_json(limit)
+        except Exception as e:
+            logger.error(f"Failed to get hot tokens: {e}")
+            return {
+                "status": "error",
+                "message": f"Failed to get hot tokens: {str(e)}"
+            }

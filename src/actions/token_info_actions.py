@@ -203,3 +203,158 @@ class TokenInfoHandler:
         
         result += "\n"
         return result 
+
+    @staticmethod
+    def get_hot_tokens_json(limit: int = 5) -> Dict[str, Any]:
+        """Get hot tokens on Sonic chain in JSON format"""
+        # 检查缓存是否有效
+        now = datetime.now()
+        if (TokenInfoHandler._cache['hot_tokens'] is not None and 
+            TokenInfoHandler._cache['last_update'] is not None and
+            now - TokenInfoHandler._cache['last_update'] < TokenInfoHandler.CACHE_DURATION):
+            logger.info("Returning cached hot tokens data")
+            return {
+                "status": "success",
+                "data": TokenInfoHandler._cache['hot_tokens'][:limit]
+            }
+
+        try:
+            # 如果缓存无效，则请求新数据
+            response = requests.get(
+                "https://api.dexscreener.com/latest/dex/search",
+                params={"q": "dyorswap wagmi shadow-exchange silverswap sonic"}
+            )
+            response.raise_for_status()
+            
+            data = response.json()
+            pairs = data.get('pairs', [])
+            
+            # 过滤出Sonic链上的交易对
+            sonic_pairs = [
+                pair for pair in pairs 
+                if pair.get("chainId") == "sonic"
+            ]
+            
+            # 使用字典存储代币信息，键为地址
+            tokens_info = {}
+            
+            # 先收集所有交易对信息
+            for pair in sonic_pairs:
+                # 安全地转换数值
+                try:
+                    volume_24h = float(pair.get('volume', {}).get('h24', 0) or 0)
+                except (ValueError, TypeError):
+                    volume_24h = 0
+                    
+                try:
+                    liquidity = float(pair.get('liquidity', {}).get('usd', 0) or 0)
+                except (ValueError, TypeError):
+                    liquidity = 0
+                
+                # 获取交易对信息
+                pair_info = {
+                    'pair_address': pair.get('pairAddress'),
+                    'dex': pair.get('dexId'),
+                    'volume_24h': volume_24h,
+                    'liquidity_usd': liquidity,
+                    'price_usd': pair.get('priceUsd'),
+                    'price_native': pair.get('priceNative'),
+                    'price_change_24h': pair.get('priceChange', {}).get('h24'),
+                    'transactions_24h': pair.get('txns', {}).get('h24', {}),
+                    'base_token': pair.get('baseToken', {}).get('symbol'),
+                    'quote_token': pair.get('quoteToken', {}).get('symbol'),
+                    'websites': pair.get('info', {}).get('websites', []),
+                    'socials': pair.get('info', {}).get('socials', []),
+                    'description': pair.get('info', {}).get('description'),
+                    'chainId': pair.get('chainId'),
+                    'url': pair.get('url'),
+                }
+                
+                # 处理 baseToken
+                base = pair.get('baseToken', {})
+                base_address = base.get('address')
+                if base_address:
+                    if base_address not in tokens_info:
+                        tokens_info[base_address] = {
+                            'address': base_address,
+                            'symbol': base.get('symbol'),
+                            'name': base.get('name'),
+                            'total_volume_24h': 0,
+                            'max_liquidity_usd': 0,
+                            'priceUsd': base.get('priceUsd'),
+                            'priceNative': base.get('priceNative'),
+                            'market_cap': base.get('marketCap'),
+                            'fdv': base.get('fdv'),
+                            'websites': pair_info['websites'],
+                            'socials': pair_info['socials'],
+                            'description': pair_info['description'],
+                            'chainId': pair_info['chainId'],
+                            'url': pair_info['url']
+                        }
+                    tokens_info[base_address]['total_volume_24h'] += volume_24h
+                    tokens_info[base_address]['max_liquidity_usd'] = max(
+                        tokens_info[base_address]['max_liquidity_usd'],
+                        liquidity
+                    )
+                
+                # 处理 quoteToken
+                quote = pair.get('quoteToken', {})
+                quote_address = quote.get('address')
+                if quote_address:
+                    if quote_address not in tokens_info:
+                        tokens_info[quote_address] = {
+                            'address': quote_address,
+                            'symbol': quote.get('symbol'),
+                            'name': quote.get('name'),
+                            'total_volume_24h': 0,
+                            'max_liquidity_usd': 0,
+                            'priceUsd': quote.get('priceUsd'),
+                            'priceNative': quote.get('priceNative'),
+                            'market_cap': quote.get('marketCap'),
+                            'fdv': quote.get('fdv'),
+                            'websites': pair_info['websites'],
+                            'socials': pair_info['socials'],
+                            'description': pair_info['description'],
+                            'chainId': pair_info['chainId'],
+                            'url': pair_info['url']
+                        }
+                    tokens_info[quote_address]['total_volume_24h'] += volume_24h
+                    tokens_info[quote_address]['max_liquidity_usd'] = max(
+                        tokens_info[quote_address]['max_liquidity_usd'],
+                        liquidity
+                    )
+            
+            # 将字典转换为列表并按24小时交易量排序
+            tokens_list = sorted(
+                tokens_info.values(),
+                key=lambda x: x['total_volume_24h'],
+                reverse=True
+            )
+            
+            # 更新缓存
+            TokenInfoHandler._cache['hot_tokens'] = tokens_list
+            TokenInfoHandler._cache['last_update'] = now
+            
+            return {
+                "status": "success",
+                "data": tokens_list[:limit]
+            }
+        except Exception as e:
+            logger.error(f"Failed to get hot tokens: {e}")
+            return {
+                "status": "error",
+                "message": f"Failed to get hot tokens: {str(e)}"
+            } 
+
+    @staticmethod
+    def handle_hot_tokens_json(limit: int = 5) -> Dict[str, Any]:
+        """Handle get-hot-tokens action and return JSON format data"""
+        try:
+            # 获取热门代币数据
+            return TokenInfoHandler.get_hot_tokens_json(limit)
+        except Exception as e:
+            logger.error(f"Failed to get hot tokens: {e}")
+            return {
+                "status": "error",
+                "message": f"Failed to get hot tokens: {str(e)}"
+            } 
