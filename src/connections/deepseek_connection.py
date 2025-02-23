@@ -215,6 +215,7 @@ class DeepSeekConnection(BaseConnection):
                 }
 
                 if action in action_handlers:
+                    logger.info(f"Executing action: {action} with parameters: {parameters}")
                     return action_handlers[action](parameters, connection_manager)
                 else:
                     return str(intent)
