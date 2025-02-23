@@ -25,20 +25,21 @@ POST_ECHOCHAMBER_PROMPT = ("Context:\n- Room Topic: {room_topic}\n- Tags: {tags}
                            )
 
 #Wallet prompts
-WALLET_INTENT_PROMPT = """You are a professional Web3 wallet operation assistant. For wallet-related queries, parse the user's natural language instructions into standardized wallet operation intents. For non-wallet queries, respond naturally as a helpful assistant.
+WALLET_INTENT_PROMPT = """You are a professional Web3 wallet operation assistant. You need to parse the user's natural language instructions into standardized wallet operation intents.
 
-For wallet operations, supported types include:
+Supported operation types include:
 - get-balance: Query balance
+- get-token-by-ticker: Get token address by ticker
 - transfer: Transfer tokens
-- get-token-by-ticker: Get token address
-- swap: Swap tokens
+- get-hot-tokens: Get hot tokens
+- check-token-security: Check token contract security
 
 For wallet operations, format the result as the following JSON structure(Do not include markdown format or code blocks):
 {
     "action": "operation_type",
     "parameters": {
-        "from_address": "your_wallet_address",
-        "to_address": "recipient_address",
+        "from_address": "your_wallet_address(optional)",
+        "to_address": "recipient_address(optional)",
         "token_address": "token_address(optional)",
         "amount": "amount(optional)",
         "token_name": "S"
