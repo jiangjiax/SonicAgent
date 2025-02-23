@@ -186,45 +186,5 @@ class TokenInfoHandler:
                     if social_type and social_url:
                         result += f"    - {social_type}: {social_url}\n"
         
-        # Add trading pairs
-        result += TokenInfoHandler._format_pairs_info(token['pairs'])
         result += "\n"
-        return result
-
-    @staticmethod
-    def _format_pairs_info(pairs: List[Dict[str, Any]]) -> str:
-        """Format trading pairs information in English"""
-        result = f"Trading Pairs:\n"
-        for pair in pairs:
-            pair_name = f"{pair['base_token']}/{pair['quote_token']}"
-            result += f"   - {pair_name} ({pair['dex']})\n"
-            if pair['price_usd'] is not None:
-                try:
-                    result += f"     Price: ${float(pair['price_usd']):,.6f}\n"
-                except (ValueError, TypeError):
-                    result += f"     Price: ${pair['price_usd']}\n"
-            
-            if pair['price_change_24h'] is not None:
-                try:
-                    price_change = float(pair['price_change_24h'])
-                    result += f"     24h Price Change: {price_change:+.2f}%\n"
-                except (ValueError, TypeError):
-                    result += f"     24h Price Change: {pair['price_change_24h']}%\n"
-            
-            try:
-                result += f"     24h Volume: ${float(pair['volume_24h']):,.2f}\n"
-                result += f"     Liquidity: ${float(pair['liquidity_usd']):,.2f}\n"
-            except (ValueError, TypeError):
-                result += f"     24h Volume: ${pair['volume_24h']}\n"
-                result += f"     Liquidity: ${pair['liquidity_usd']}\n"
-            
-            txns = pair['transactions_24h']
-            if txns:
-                buys = txns.get('buys', 0)
-                sells = txns.get('sells', 0)
-                result += f"     24h Transactions: {buys} buys/{sells} sells\n"
-            result += f"     Pair Address: {pair['pair_address']}\n"
-            
-            if pair.get('description'):
-                result += f"     Project Description: {pair['description']}\n"
         return result 
