@@ -194,7 +194,7 @@ class TokenInfoHandler:
     @staticmethod
     def _format_pairs_info(pairs: List[Dict[str, Any]]) -> str:
         """Format trading pairs information in English"""
-        result = f"   Trading Pairs:\n"
+        result = f"Trading Pairs:\n"
         for pair in pairs:
             pair_name = f"{pair['base_token']}/{pair['quote_token']}"
             result += f"   - {pair_name} ({pair['dex']})\n"
