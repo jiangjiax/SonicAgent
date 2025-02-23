@@ -74,23 +74,24 @@ class TokenInfoHandler:
                     liquidity = 0
                 
                 # 获取交易对信息
-                pair_info = {
-                    'pair_address': pair.get('pairAddress'),
-                    'dex': pair.get('dexId'),
-                    'volume_24h': volume_24h,
-                    'liquidity_usd': liquidity,
-                    'price_usd': pair.get('priceUsd'),
-                    'price_native': pair.get('priceNative'),
-                    'price_change_24h': pair.get('priceChange', {}).get('h24'),
-                    'transactions_24h': pair.get('txns', {}).get('h24', {}),
-                    'base_token': pair.get('baseToken', {}).get('symbol'),
-                    'quote_token': pair.get('quoteToken', {}).get('symbol'),
-                    'websites': pair.get('info', {}).get('websites', []),
-                    'socials': pair.get('info', {}).get('socials', []),
-                    'description': pair.get('info', {}).get('description'),
-                    'chainId': pair.get('chainId'),
-                    'url': pair.get('url'),
-                }
+                # pair_info = {
+                #     'pair_address': pair.get('pairAddress'),
+                #     'dex': pair.get('dexId'),
+                #     'volume_24h': volume_24h,
+                #     'liquidity_usd': liquidity,
+                #     'price_usd': pair.get('priceUsd'),
+                #     'price_native': pair.get('priceNative'),
+                #     'price_change_24h': pair.get('priceChange', {}).get('h24'),
+                #     'transactions_24h': pair.get('txns', {}).get('h24', {}),
+                #     'base_token': pair.get('baseToken', {}).get('symbol'),
+                #     'quote_token': pair.get('quoteToken', {}).get('symbol'),
+                #     'websites': pair.get('info', {}).get('websites', []),
+                #     'socials': pair.get('info', {}).get('socials', []),
+                #     'imageUrl': pair.get('info', {}).get('imageUrl', []),
+                #     'description': pair.get('info', {}).get('description'),
+                #     'chainId': pair.get('chainId'),
+                #     'url': pair.get('url'),
+                # }
                 
                 # 处理 baseToken
                 base = pair.get('baseToken', {})
@@ -108,7 +109,8 @@ class TokenInfoHandler:
                         'url': pair.get('url'),
                         'websites': pair.get('info', {}).get('websites', []),
                         'socials': pair.get('info', {}).get('socials', []),
-                        'pairs': []
+                        'imageUrl': pair.get('info', {}).get('imageUrl', []),
+                        # 'pairs': []
                     }
                 
                 # 更新代币信息
@@ -117,7 +119,7 @@ class TokenInfoHandler:
                     tokens_info[base_address]['max_liquidity_usd'],
                     liquidity
                 )
-                tokens_info[base_address]['pairs'].append(pair_info)
+                # tokens_info[base_address]['pairs'].append(pair_info)
             
             # 按24小时交易量排序
             sorted_tokens = sorted(
