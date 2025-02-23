@@ -218,7 +218,6 @@ class DeepSeekConnection(BaseConnection):
                     "get-token-by-ticker": WalletActionHandler.handle_get_token_by_ticker,
                     "transfer": WalletActionHandler.handle_transfer,
                     "get-hot-tokens": lambda p, cm: TokenInfoHandler.handle_hot_tokens(5),
-                    "get-hot-tokens-json": lambda p, cm: TokenInfoHandler.handle_hot_tokens_json(p.get("limit", 5)),
                     "check-token-security": WalletActionHandler.handle_check_token_security
                 }
 
@@ -274,11 +273,6 @@ class DeepSeekConnection(BaseConnection):
         if action_name not in self.actions:
             raise KeyError(f"Unknown action: {action_name}")
 
-        # 直接处理 get-hot-tokens-json 操作
-        if action_name == "get-hot-tokens-json":
-            limit = kwargs.get("limit", 5)
-            return TokenInfoHandler.get_hot_tokens_json(limit)
-
         action = self.actions[action_name]
         errors = action.validate_params(kwargs)
         if errors:
@@ -286,13 +280,25 @@ class DeepSeekConnection(BaseConnection):
 
         method_name = action_name.replace('-', '_')
         method = getattr(self, method_name)
+        
+        # 确保所有方法都能接收 connection_manager 参数
         return method(**kwargs)
 
-    def get_hot_tokens_json(self, limit: int = 5) -> Dict[str, Any]:
-        """Get hot tokens in JSON format"""
+    def get_hot_tokens_json(self, limit: int = 5, **kwargs) -> Dict[str, Any]:
+        """Get hot tokens in JSON format
+        Args:
+            limit: Number of tokens to return
+            **kwargs: Additional arguments (e.g., connection_manager)
+        """
         try:
-            # 调用 TokenInfoHandler 的方法
-            return TokenInfoHandler.get_hot_tokens_json(limit)
+            # 直接调用 get_hot_tokens 获取数据
+            tokens = TokenInfoHandler.get_hot_tokens(limit)
+            
+            # 构建 JSON 响应
+            return {
+                "status": "success",
+                "data": tokens
+            }
         except Exception as e:
             logger.error(f"Failed to get hot tokens: {e}")
             return {
