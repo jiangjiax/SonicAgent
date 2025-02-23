@@ -104,6 +104,8 @@ class TokenInfoHandler:
                         'max_liquidity_usd': 0,
                         'market_cap': base.get('marketCap'),
                         'fdv': base.get('fdv'),
+                        'priceUsd': pair.get('priceUsd'),
+                        'priceNative': pair.get('priceNative'),
                         'chainId': pair.get('chainId'),
                         'url': pair.get('url'),
                         'websites': pair.get('info', {}).get('websites', []),
@@ -147,6 +149,19 @@ class TokenInfoHandler:
         result += f"   Contract Address: {token['address']}\n"
         result += f"   Total 24h Volume: ${float(token['total_volume_24h']):,.2f}\n"
         result += f"   Max Liquidity: ${float(token['max_liquidity_usd']):,.2f}\n"
+        
+        # Add price information if available
+        if token.get('priceUsd') is not None:
+            try:
+                result += f"   Price (USD): ${float(token['priceUsd']):,.10f}\n"
+            except (ValueError, TypeError):
+                result += f"   Price (USD): ${token['priceUsd']}\n"
+        
+        if token.get('priceNative') is not None:
+            try:
+                result += f"   Price (Native): {float(token['priceNative']):,.10f}\n"
+            except (ValueError, TypeError):
+                result += f"   Price (Native): {token['priceNative']}\n"
         
         # Add market cap if available
         if token['market_cap'] is not None:
