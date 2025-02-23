@@ -119,10 +119,16 @@ class WalletActionHandler:
                 else:
                     logger.info(f"Token {token_address} has no balance or balance is zero")
             
+            # 查询 S 代币的余额
+            s_balance = sonic_connection.get_balance(address=address, token_address=None)
+            if s_balance is not None and s_balance > 0:
+                balances["S"] = s_balance
+                logger.info(f"S balance: {s_balance}")
+            
             # 格式化输出
             result = f"Wallet {address} balances:\n"
             for token_name, balance in balances.items():
-                result += f"   Token {token_name}: {balance}\n"
+                result += f"   {token_name}: {balance}\n"
             
             logger.info("Successfully fetched all token balances")
             return result
