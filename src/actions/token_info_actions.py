@@ -17,7 +17,7 @@ class TokenInfoHandler:
         """Handle get-hot-tokens action and return user-friendly text in English"""
         try:
             # 获取热门代币数据
-            hot_tokens = TokenInfoHandler._get_hot_tokens(limit)
+            hot_tokens = TokenInfoHandler.get_hot_tokens(limit)
             
             # 格式化输出
             result = "🔥 Hot Tokens on Sonic Chain\n\n"
@@ -95,45 +95,39 @@ class TokenInfoHandler:
                 
                 # 处理 baseToken
                 base = pair.get('baseToken', {})
-                if base and base.get('address'):
-                    addr = base['address']
-                    if addr not in tokens_info:
-                        tokens_info[addr] = {
-                            'symbol': base.get('symbol'),
-                            'name': base.get('name'),
-                            'address': addr,
-                            'total_volume_24h': volume_24h,
-                            'max_liquidity_usd': liquidity,
-                            'market_cap': pair.get('marketCap'),
-                            'fdv': pair.get('fdv'),
-                            'pairs': [pair_info]
-                        }
-                    else:
-                        try:
-                            tokens_info[addr]['total_volume_24h'] += volume_24h
-                        except (ValueError, TypeError):
-                            tokens_info[addr]['total_volume_24h'] = volume_24h
-                            
-                        try:
-                            tokens_info[addr]['max_liquidity_usd'] = max(
-                                float(tokens_info[addr]['max_liquidity_usd']), 
-                                liquidity
-                            )
-                        except (ValueError, TypeError):
-                            tokens_info[addr]['max_liquidity_usd'] = liquidity
-                            
-                        tokens_info[addr]['pairs'].append(pair_info)
-
-            # 转换为列表并按总交易量排序
-            hot_tokens = list(tokens_info.values())
-            hot_tokens.sort(key=lambda x: float(x['total_volume_24h'] or 0), reverse=True)
+                base_address = base.get('address')
+                if base_address not in tokens_info:
+                    tokens_info[base_address] = {
+                        'address': base_address,
+                        'name': base.get('name'),
+                        'symbol': base.get('symbol'),
+                        'total_volume_24h': 0,
+                        'max_liquidity_usd': 0,
+                        'market_cap': base.get('marketCap'),
+                        'fdv': base.get('fdv'),
+                        'pairs': []
+                    }
+                
+                # 更新代币信息
+                tokens_info[base_address]['total_volume_24h'] += volume_24h
+                tokens_info[base_address]['max_liquidity_usd'] = max(
+                    tokens_info[base_address]['max_liquidity_usd'],
+                    liquidity
+                )
+                tokens_info[base_address]['pairs'].append(pair_info)
+            
+            # 按24小时交易量排序
+            sorted_tokens = sorted(
+                tokens_info.values(),
+                key=lambda x: x['total_volume_24h'],
+                reverse=True
+            )
             
             # 更新缓存
-            TokenInfoHandler._cache['hot_tokens'] = hot_tokens
+            TokenInfoHandler._cache['hot_tokens'] = sorted_tokens
             TokenInfoHandler._cache['last_update'] = now
-            logger.info("Hot tokens cache updated")
             
-            return hot_tokens[:limit]
+            return sorted_tokens[:limit]
             
         except Exception as e:
             logger.error(f"Failed to get hot tokens: {e}")
