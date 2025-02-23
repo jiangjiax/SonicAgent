@@ -87,7 +87,9 @@ class TokenInfoHandler:
                     'quote_token': pair.get('quoteToken', {}).get('symbol'),
                     'websites': pair.get('info', {}).get('websites', []),
                     'socials': pair.get('info', {}).get('socials', []),
-                    'description': pair.get('info', {}).get('description')
+                    'description': pair.get('info', {}).get('description'),
+                    'chainId': pair.get('chainId'),
+                    'url': pair.get('url'),
                 }
                 
                 # 处理 baseToken
@@ -102,6 +104,10 @@ class TokenInfoHandler:
                         'max_liquidity_usd': 0,
                         'market_cap': base.get('marketCap'),
                         'fdv': base.get('fdv'),
+                        'chainId': pair.get('chainId'),
+                        'url': pair.get('url'),
+                        'websites': pair.get('info', {}).get('websites', []),
+                        'socials': pair.get('info', {}).get('socials', []),
                         'pairs': []
                     }
                 
