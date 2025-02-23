@@ -158,6 +158,28 @@ class TokenInfoHandler:
             except (ValueError, TypeError):
                 result += f"   Fully Diluted Valuation: ${token['fdv']}\n"
         
+        # Add chain and URL information
+        if token.get('chainId'):
+            result += f"   Chain: {token['chainId']}\n"
+        if token.get('url'):
+            result += f"   URL: {token['url']}\n"
+        
+        # Add websites if available
+        if token.get('websites'):
+            website_urls = [w['url'] for w in token['websites'] if isinstance(w, dict) and 'url' in w]
+            if website_urls:
+                result += f"   Websites: {', '.join(website_urls)}\n"
+        
+        # Add socials if available
+        if token.get('socials'):
+            result += "   Social Media:\n"
+            for social in token['socials']:
+                if isinstance(social, dict):
+                    social_type = social.get('type', '').capitalize()
+                    social_url = social.get('url', '')
+                    if social_type and social_url:
+                        result += f"    - {social_type}: {social_url}\n"
+        
         # Add trading pairs
         result += TokenInfoHandler._format_pairs_info(token['pairs'])
         result += "\n"
@@ -170,7 +192,6 @@ class TokenInfoHandler:
         for pair in pairs:
             pair_name = f"{pair['base_token']}/{pair['quote_token']}"
             result += f"   - {pair_name} ({pair['dex']})\n"
-            
             if pair['price_usd'] is not None:
                 try:
                     result += f"     Price: ${float(pair['price_usd']):,.6f}\n"
@@ -197,20 +218,6 @@ class TokenInfoHandler:
                 sells = txns.get('sells', 0)
                 result += f"     24h Transactions: {buys} buys/{sells} sells\n"
             result += f"     Pair Address: {pair['pair_address']}\n"
-            
-            if pair.get('websites'):
-                website_urls = [w['url'] for w in pair['websites'] if isinstance(w, dict) and 'url' in w]
-                if website_urls:
-                    result += f"     Websites: {', '.join(website_urls)}\n"
-            
-            if pair.get('socials'):
-                result += "     Social Media:\n"
-                for social in pair['socials']:
-                    if isinstance(social, dict):
-                        social_type = social.get('type', '').capitalize()
-                        social_url = social.get('url', '')
-                        if social_type and social_url:
-                            result += f"      - {social_type}: {social_url}\n"
             
             if pair.get('description'):
                 result += f"     Project Description: {pair['description']}\n"
