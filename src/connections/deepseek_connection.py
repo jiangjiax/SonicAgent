@@ -284,7 +284,7 @@ class DeepSeekConnection(BaseConnection):
         # 确保所有方法都能接收 connection_manager 参数
         return method(**kwargs)
 
-    def get_hot_tokens_json(self, limit: int = 5, **kwargs) -> Dict[str, Any]:
+    def get_hot_tokens_json(self, limit: int = 10, **kwargs) -> Dict[str, Any]:
         """Get hot tokens in JSON format
         Args:
             limit: Number of tokens to return

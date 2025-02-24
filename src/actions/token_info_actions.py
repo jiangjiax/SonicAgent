@@ -13,7 +13,7 @@ class TokenInfoHandler:
     CACHE_DURATION = timedelta(hours=1)
 
     @staticmethod
-    def handle_hot_tokens(limit: int = 5) -> str:
+    def handle_hot_tokens(limit: int = 10) -> str:
         """Handle get-hot-tokens action and return user-friendly text in English"""
         try:
             # 获取热门代币数据
@@ -30,7 +30,7 @@ class TokenInfoHandler:
             return "❌ Failed to get hot tokens. Please try again later."
 
     @staticmethod
-    def get_hot_tokens(limit: int = 5) -> list:
+    def get_hot_tokens(limit: int = 10) -> list:
         """Get hot tokens on Sonic chain sorted by 24h volume"""
         # 检查缓存是否有效
         now = datetime.now()
@@ -189,7 +189,7 @@ class TokenInfoHandler:
         return result 
 
     @staticmethod
-    def handle_hot_tokens_json(limit: int = 5) -> Dict[str, Any]:
+    def handle_hot_tokens_json(limit: int = 10) -> Dict[str, Any]:
         """Handle get-hot-tokens action and return JSON format data"""
         try:
             # 获取热门代币数据
