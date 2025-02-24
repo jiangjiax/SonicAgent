@@ -5,6 +5,7 @@ from src.constants.abi import ERC20_ABI
 import requests
 import os
 from dotenv import load_dotenv
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # 加载 .env 文件
 load_dotenv()
@@ -47,7 +48,7 @@ class WalletActionHandler:
 
     @staticmethod
     def _get_all_balances(address: str, sonic_connection) -> str:
-        """Get all token balances for a given address"""
+        """Get all token balances for a given address using concurrent requests"""
         try:
             logger.info(f"Fetching all token balances for address: {address}")
             
@@ -70,7 +71,7 @@ class WalletActionHandler:
                     "startblock": 0,
                     "endblock": 99999999,
                     "sort": "asc",
-                    "apikey": api_key  # 添加 API Key
+                    "apikey": api_key
                 }
             )
             response.raise_for_status()
@@ -103,21 +104,31 @@ class WalletActionHandler:
             
             logger.info(f"Extracted {len(token_addresses)} unique token addresses")
             
-            # 查询每个代币的余额和名称
+            # 使用线程池并发查询每个代币的余额和名称
             balances = {}
-            for token_address in token_addresses:
-                logger.info(f"Fetching balance for token: {token_address}")
-                balance = sonic_connection.get_balance(
-                    address=address,
-                    token_address=token_address
-                )
-                if balance is not None and balance > 0:
-                    # 获取代币名称或符号
-                    token_name = WalletActionHandler._get_token_name(sonic_connection, token_address)
-                    balances[token_name or token_address] = balance
-                    logger.info(f"{token_name or token_address} balance: {balance}")
-                else:
-                    logger.info(f"Token {token_address} has no balance or balance is zero")
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                # 提交所有任务
+                future_to_token = {
+                    executor.submit(
+                        WalletActionHandler._get_token_balance_and_name,
+                        sonic_connection,
+                        address,
+                        token_address
+                    ): token_address for token_address in token_addresses
+                }
+                
+                # 处理完成的任务
+                for future in as_completed(future_to_token):
+                    token_address = future_to_token[future]
+                    try:
+                        token_name, balance = future.result()
+                        if balance is not None and balance > 0:
+                            balances[token_name or token_address] = balance
+                            logger.info(f"{token_name or token_address} balance: {balance}")
+                        else:
+                            logger.info(f"Token {token_address} has no balance or balance is zero")
+                    except Exception as e:
+                        logger.error(f"Error fetching balance for token {token_address}: {e}")
             
             # 查询 S 代币的余额
             s_balance = sonic_connection.get_balance(address=address, token_address=None)
@@ -135,6 +146,16 @@ class WalletActionHandler:
         except Exception as e:
             logger.error(f"Failed to get all balances: {e}")
             return f"❌ Failed to get all balances: {e}"
+
+    @staticmethod
+    def _get_token_balance_and_name(sonic_connection, address: str, token_address: str) -> tuple:
+        """Helper method to get token balance and name"""
+        balance = sonic_connection.get_balance(
+            address=address,
+            token_address=token_address
+        )
+        token_name = WalletActionHandler._get_token_name(sonic_connection, token_address)
+        return token_name, balance
 
     @staticmethod
     def _get_token_name(sonic_connection, token_address: str) -> str:
