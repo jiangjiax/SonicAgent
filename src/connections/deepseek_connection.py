@@ -12,6 +12,7 @@ import requests
 from datetime import datetime
 from src.actions.wallet_actions import WalletActionHandler
 from src.actions.token_info_actions import TokenInfoHandler
+from src.actions.nft_info_actions import NFTInfoHandler
 
 logger = logging.getLogger("connections.deepseek_connection")
 
@@ -217,8 +218,10 @@ class DeepSeekConnection(BaseConnection):
                     "get-balance": WalletActionHandler.handle_get_balance,
                     "get-token-by-ticker": WalletActionHandler.handle_get_token_by_ticker,
                     "transfer": WalletActionHandler.handle_transfer,
-                    "get-hot-tokens": lambda p, cm: TokenInfoHandler.handle_hot_tokens(5),
-                    "check-token-security": WalletActionHandler.handle_check_token_security
+                    "get-hot-tokens": lambda p, cm: TokenInfoHandler.handle_hot_tokens(10),
+                    "check-token-security": WalletActionHandler.handle_check_token_security,
+                    "get-hot-nfts": lambda p, cm: NFTInfoHandler.handle_hot_nfts(10),
+                    "get-nft-info": lambda p, cm: NFTInfoHandler.handle_nft_info(p.get("collection_address"))
                 }
 
                 if action in action_handlers:

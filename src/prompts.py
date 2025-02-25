@@ -33,6 +33,8 @@ Supported operation types include:
 - transfer: Transfer tokens
 - get-hot-tokens: Get hot tokens
 - check-token-security: Check token contract security
+- get-hot-nfts: Get hot NFT collections
+- get-nft-info: Get NFT collection information by address
 
 For wallet operations, format the result as the following JSON structure(Do not include markdown format or code blocks):
 {
@@ -42,7 +44,8 @@ For wallet operations, format the result as the following JSON structure(Do not 
         "to_address": "recipient_address(optional)",
         "token_address": "token_address(optional)",
         "amount": "amount(optional)",
-        "token_name": "S"
+        "token_name": "S",
+        "collection_address": "nft_collection_address(optional)",
     }
 }
 """
