@@ -9,8 +9,7 @@ logger = logging.getLogger("actions.nft_info_actions")
 
 class NFTInfoHandler:
     _cache = {
-        'hot_nfts': None,     # 存储热门 NFT 数据
-        'nft_info': {},       # 存储 NFT 详细信息
+        'hot_nfts': None     # 存储热门 NFT 数据
     }
     CACHE_DURATION = timedelta(hours=1)  # 缓存有效期为1小时
 
@@ -34,8 +33,8 @@ class NFTInfoHandler:
     @staticmethod
     def get_hot_nfts(limit: int = 10, base_url: str = "https://paintswap.io/sonic/collections/") -> list:
         """Get hot NFT collections from PaintSwap API"""
-        if NFTInfoHandler._cache['hot_nfts'] is not None:
-            logger.info("Returning cached hot NFTs data")
+        if NFTInfoHandler._cache['hot_nfts'] is not {} and NFTInfoHandler._cache['hot_nfts'] is not None:
+            logger.info(NFTInfoHandler._cache['hot_nfts'])
             return NFTInfoHandler._cache['hot_nfts'][:limit]
 
         try:
@@ -60,7 +59,7 @@ class NFTInfoHandler:
             
         except Exception as e:
             logger.error(f"Failed to get hot NFTs: {e}")
-            if NFTInfoHandler._cache['hot_nfts'] is not None:
+            if NFTInfoHandler._cache['hot_nfts'] is not {} and NFTInfoHandler._cache['hot_nfts'] is not None:
                 logger.info("Returning cached data after API request failure")
                 return NFTInfoHandler._cache['hot_nfts'][:limit]
             raise Exception(f"Failed to get hot NFTs: {e}")
@@ -104,7 +103,7 @@ class NFTInfoHandler:
             
             # Format output
             result = f"📊 NFT Collection Information\n\n"
-            result += NFTInfoHandler._format_detailed_nft_info(nft_info)
+            result += NFTInfoHandler._format_detailed_nft_info(nft_info.get('collection'))
             
             return result
         except Exception as e:
@@ -114,27 +113,13 @@ class NFTInfoHandler:
     @staticmethod
     def get_nft_info(collection_address: str) -> Dict[str, Any]:
         """Get NFT collection info"""
-        if collection_address in NFTInfoHandler._cache['nft_info']:
-            logger.info(f"Returning cached NFT info for {collection_address}")
-            return NFTInfoHandler._cache['nft_info'][collection_address]
-
         try:
-            # If no cache, request new data
+            # 直接请求数据
             response = requests.get(f"https://api.paintswap.finance/v2/collections/{collection_address}")
             response.raise_for_status()
-            
-            nft_info = response.json()
-            
-            # Update cache
-            NFTInfoHandler._cache['nft_info'][collection_address] = nft_info
-            
-            return nft_info
-            
+            return response.json()
         except Exception as e:
             logger.error(f"Failed to get NFT info: {e}")
-            if collection_address in NFTInfoHandler._cache['nft_info']:
-                logger.info(f"Returning cached data for {collection_address} after API request failure")
-                return NFTInfoHandler._cache['nft_info'][collection_address]
             raise Exception(f"Failed to get NFT info: {e}")
 
     @staticmethod
@@ -152,7 +137,7 @@ class NFTInfoHandler:
         result += f"   Address: {nft.get('address', 'N/A')}\n"
         result += f"   Creator: {nft.get('owner', 'N/A')}\n"
         
-        if verified is not None:
+        if isWhitelisted is not None:
             result += f"   isWhitelisted: {'Yes' if isWhitelisted else 'No'}\n"
 
         # Add description
