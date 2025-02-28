@@ -25,18 +25,21 @@ POST_ECHOCHAMBER_PROMPT = ("Context:\n- Room Topic: {room_topic}\n- Tags: {tags}
                            )
 
 #Wallet prompts
-WALLET_INTENT_PROMPT = """You are a professional Web3 wallet operation assistant. You need to parse the user's natural language instructions into standardized wallet operation intents.
+WALLET_INTENT_PROMPT = """You are a professional Web3 wallet and market analysis assistant. You need to parse the user's natural language instructions into standardized operation intents.
 
 Supported operation types include:
 - get-balance: Query balance
 - get-token-by-ticker: Get token address by ticker
-- transfer: Transfer tokens
 - get-hot-tokens: Get hot tokens
 - check-token-security: Check token contract security
 - get-hot-nfts: Get hot NFT collections
 - get-nft-info: Get NFT collection information by address
+- list-topics: List all available Allora prediction topics
+- get-inference: Get prediction for a specific Allora topic (requires topic_id)
 
-For wallet operations, format the result as the following JSON structure(Do not include markdown format or code blocks):
+If the user does not provide any of the supported operation types, respond in a friendly and conversational manner, as a Web3 assistant, without returning a JSON structure. 
+
+For operations, format the result as the following JSON structure (Do not include markdown format or code blocks):
 {
     "action": "operation_type",
     "parameters": {
@@ -46,6 +49,8 @@ For wallet operations, format the result as the following JSON structure(Do not 
         "amount": "amount(optional)",
         "token_name": "S",
         "collection_address": "nft_collection_address(optional)",
+        "topic": "allora_topic_name(optional)",
+        "topic_id": "numeric_topic_id(required for get-inference)"
     }
 }
 """

@@ -24,7 +24,7 @@ class WalletActionHandler:
         
         if "token_name" not in parameters:
             return WalletActionHandler._get_all_balances(parameters["from_address"], sonic_connection)
-            
+
         # 如果 token_name 是 "all"，查询所有代币余额
         if parameters["token_name"] == "all":
             return WalletActionHandler._get_all_balances(parameters["from_address"], sonic_connection)
@@ -35,6 +35,7 @@ class WalletActionHandler:
             if not ticker:
                 return "No token name provided"
             get_token_address = sonic_connection.get_token_by_ticker(ticker)
+            print(get_token_address)
         
         # 查询单个代币余额
         result = sonic_connection.get_balance(
@@ -83,7 +84,7 @@ class WalletActionHandler:
                 logger.error(f"Unexpected response format: {response_data}")
                 return f"❌ Unexpected response format from API"
             
-            # 提取所有代币地址
+            # 提取所有代币信息
             token_transactions = response_data.get("result", [])
             if not isinstance(token_transactions, list):
                 logger.error(f"Unexpected transactions format: {token_transactions}")
@@ -91,44 +92,45 @@ class WalletActionHandler:
             
             logger.info(f"Found {len(token_transactions)} token transactions")
             
-            token_addresses = set()
+            # 使用字典存储代币信息，键为地址，值为符号
+            token_info = {}
             for tx in token_transactions:
                 if not isinstance(tx, dict):
                     logger.error(f"Unexpected transaction format: {tx}")
                     continue
                 
                 token_address = tx.get("contractAddress")
-                if token_address:
-                    token_addresses.add(token_address)
-                    logger.debug(f"Found token address: {token_address}")
+                token_symbol = tx.get("tokenSymbol")
+                if token_address and token_symbol:
+                    token_info[token_address] = token_symbol
+                    logger.debug(f"Found token: {token_symbol} at {token_address}")
             
-            logger.info(f"Extracted {len(token_addresses)} unique token addresses")
+            logger.info(f"Extracted {len(token_info)} unique tokens")
             
-            # 使用线程池并发查询每个代币的余额和名称
+            # 使用线程池并发查询每个代币的余额
             balances = {}
-            with ThreadPoolExecutor(max_workers=10) as executor:
+            with ThreadPoolExecutor(max_workers=15) as executor:
                 # 提交所有任务
                 future_to_token = {
                     executor.submit(
-                        WalletActionHandler._get_token_balance_and_name,
-                        sonic_connection,
-                        address,
-                        token_address
-                    ): token_address for token_address in token_addresses
+                        sonic_connection.get_balance,
+                        address=address,
+                        token_address=token_address
+                    ): (token_address, symbol) for token_address, symbol in token_info.items()
                 }
                 
                 # 处理完成的任务
                 for future in as_completed(future_to_token):
-                    token_address = future_to_token[future]
+                    token_address, symbol = future_to_token[future]
                     try:
-                        token_name, balance = future.result()
+                        balance = future.result()
                         if balance is not None and balance > 0:
-                            balances[token_name or token_address] = balance
-                            logger.info(f"{token_name or token_address} balance: {balance}")
+                            balances[symbol] = balance
+                            logger.info(f"{symbol} balance: {balance}")
                         else:
-                            logger.info(f"Token {token_address} has no balance or balance is zero")
+                            logger.info(f"Token {symbol} has no balance or balance is zero")
                     except Exception as e:
-                        logger.error(f"Error fetching balance for token {token_address}: {e}")
+                        logger.error(f"Error fetching balance for token {symbol}: {e}")
             
             # 查询 S 代币的余额
             s_balance = sonic_connection.get_balance(address=address, token_address=None)
@@ -138,8 +140,8 @@ class WalletActionHandler:
             
             # 格式化输出
             result = f"Wallet {address} balances:\n"
-            for token_name, balance in balances.items():
-                result += f"   {token_name}: {balance}\n"
+            for token_symbol, balance in balances.items():
+                result += f"   {token_symbol}: {balance}\n"
             
             logger.info("Successfully fetched all token balances")
             return result

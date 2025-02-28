@@ -100,6 +100,26 @@ class DeepSeekConnection(BaseConnection):
                     ActionParameter("limit", False, int, "Number of hot tokens to return")
                 ],
                 description="Get hot tokens on Sonic chain in last 24h"
+            ),
+            "get-hot-nfts-json": Action(
+                name="get-hot-nfts-json",
+                parameters=[
+                    ActionParameter("limit", False, int, "Number of hot NFTs to return"),
+                    ActionParameter("base_url", False, str, "Base URL for PaintSwap collections")
+                ],
+                description="Get hot NFT collections in JSON format"
+            ),
+            "list-topics": Action(
+                name="list-topics",
+                parameters=[],
+                description="List all available Allora prediction topics"
+            ),
+            "get-inference": Action(
+                name="get-inference",
+                parameters=[
+                    ActionParameter("topic", True, str, "Topic name for prediction")
+                ],
+                description="Get prediction for a specific Allora topic"
             )
         }
 
@@ -211,7 +231,7 @@ class DeepSeekConnection(BaseConnection):
                 parameters = intent_data.get("parameters", {})
                 
                 if not connection_manager:
-                    raise ValueError("Connection manager is required for wallet operations")
+                    raise ValueError("Connection manager is required for operations")
 
                 # 根据action类型调用相应的处理方法
                 action_handlers = {
@@ -221,7 +241,9 @@ class DeepSeekConnection(BaseConnection):
                     "get-hot-tokens": lambda p, cm: TokenInfoHandler.handle_hot_tokens(10),
                     "check-token-security": WalletActionHandler.handle_check_token_security,
                     "get-hot-nfts": lambda p, cm: NFTInfoHandler.handle_hot_nfts(10),
-                    "get-nft-info": lambda p, cm: NFTInfoHandler.handle_nft_info(p.get("collection_address"))
+                    "get-nft-info": lambda p, cm: NFTInfoHandler.handle_nft_info(p.get("collection_address")),
+                    "list-topics": lambda p, cm: self._handle_list_topics(cm),
+                    "get-inference": lambda p, cm: self._handle_get_inference(p, cm)
                 }
 
                 if action in action_handlers:
@@ -235,6 +257,67 @@ class DeepSeekConnection(BaseConnection):
             
         except Exception as e:
             raise DeepSeekAPIError(f"Text generation failed: {e}")
+
+    def _handle_list_topics(self, connection_manager) -> str:
+        """Handle list-topics action"""
+        allora_connection = connection_manager.connections.get("allora")
+        if not allora_connection:
+            raise ValueError("Allora connection not found")
+        
+        try:
+            topics = allora_connection.list_topics()
+            if not topics:
+                return "No prediction topics available"
+            
+            result = "Available Allora prediction topics:\n"
+            for topic in topics:
+                result += f"ID: {topic.topic_id} - {topic.topic_name}"
+                if topic.description:
+                    result += f": {topic.description}"
+                result += f"\n   - Active: {topic.is_active}"
+                result += f"\n   - Workers: {topic.worker_count}"
+                result += f"\n   - Last Updated: {topic.updated_at}\n"
+            
+            result += "\nTo get a prediction, simply ask about any topic using its ID (e.g., 'What's the prediction for topic 22?' or 'Show me the forecast for ID 30')"
+            return result
+        except Exception as e:
+            logger.error(f"Failed to list topics: {e}")
+            return f"❌ Failed to list topics: {str(e)}"
+
+    def _handle_get_inference(self, parameters: Dict[str, Any], connection_manager) -> str:
+        """Handle get-inference action"""
+        allora_connection = connection_manager.connections.get("allora")
+        if not allora_connection:
+            raise ValueError("Allora connection not found")
+        
+        topic_id = parameters.get("topic_id")
+        if not topic_id:
+            return "Please provide a topic ID for prediction. You can ask me to show you the list of available Allora prediction topics first."
+        
+        try:
+            # 确保 topic_id 是整数
+            topic_id = int(topic_id)
+            
+            # 获取主题信息以显示名称
+            topics = allora_connection.list_topics()
+            topic = next((t for t in topics if t.topic_id == topic_id), None)
+            if not topic:
+                return f"Topic ID {topic_id} not found. You can ask me to show you the list of available prediction topics."
+            
+            prediction = allora_connection.get_inference(topic_id)
+            if not prediction:
+                return f"No prediction available for topic: {topic.topic_name} (ID: {topic_id})"
+            
+            result = f"Prediction for {topic.topic_name} (ID: {topic_id}):\n"
+            result += f"Forecast: {prediction['inference']}\n"
+            if 'confidence' in prediction:
+                result += f"Confidence: {prediction['confidence']}%\n"
+            return result
+        except ValueError:
+            return "Invalid topic ID. Please provide a valid numeric topic ID."
+        except Exception as e:
+            logger.error(f"Failed to get prediction for topic {topic_id}: {e}")
+            return f"❌ Failed to get prediction: {str(e)}"
 
     def check_model(self, model: str, **kwargs) -> bool:
         """Check if a specific model is available"""
@@ -307,4 +390,25 @@ class DeepSeekConnection(BaseConnection):
             return {
                 "status": "error",
                 "message": f"Failed to get hot tokens: {str(e)}"
+            }
+
+    def get_hot_nfts_json(self, limit: int = 10, base_url: str = "https://paintswap.io/sonic/collections/", **kwargs) -> Dict[str, Any]:
+        """Get hot NFTs in JSON format
+        Args:
+            limit: Number of NFTs to return
+            base_url: Base URL for PaintSwap collections
+            **kwargs: Additional arguments (e.g., connection_manager)
+        """
+        try:
+            # Call the NFTInfoHandler to get filtered hot NFTs with the base URL
+            filtered_nfts = NFTInfoHandler.get_filtered_hot_nfts(limit, base_url)
+            return {
+                "status": "success",
+                "data": filtered_nfts
+            }
+        except Exception as e:
+            logger.error(f"Failed to get hot NFTs: {e}")
+            return {
+                "status": "error",
+                "message": f"Failed to get hot NFTs: {str(e)}"
             }

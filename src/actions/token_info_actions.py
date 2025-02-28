@@ -110,6 +110,8 @@ class TokenInfoHandler:
                         'websites': pair.get('info', {}).get('websites', []),
                         'socials': pair.get('info', {}).get('socials', []),
                         'imageUrl': pair.get('info', {}).get('imageUrl', []),
+                        'marketCap': pair.get('marketCap'),
+                        'priceChange_h24': pair.get('priceChange', {}).get('h24'),
                         # 'pairs': []
                     }
                 
@@ -149,6 +151,8 @@ class TokenInfoHandler:
         result += f"   Contract Address: {token['address']}\n"
         result += f"   Total 24h Volume: ${float(token['total_volume_24h']):,.2f}\n"
         result += f"   Max Liquidity: ${float(token['max_liquidity_usd']):,.2f}\n"
+        result += f"   Market Cap: ${float(token['marketCap']):,.2f}\n"
+        result += f"   Price Change (24h): {token['priceChange_h24']}%\n"
         
         # Add price information if available
         if token.get('priceUsd') is not None:
@@ -187,16 +191,3 @@ class TokenInfoHandler:
         
         result += "\n"
         return result 
-
-    @staticmethod
-    def handle_hot_tokens_json(limit: int = 10) -> Dict[str, Any]:
-        """Handle get-hot-tokens action and return JSON format data"""
-        try:
-            # 获取热门代币数据
-            return TokenInfoHandler.get_hot_tokens_json(limit)
-        except Exception as e:
-            logger.error(f"Failed to get hot tokens: {e}")
-            return {
-                "status": "error",
-                "message": f"Failed to get hot tokens: {str(e)}"
-            } 

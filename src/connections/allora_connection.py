@@ -89,7 +89,7 @@ class AlloraConnection(BaseConnection):
         except Exception as e:
             raise AlloraAPIError(f"Failed to get inference: {str(e)}")
 
-    def list_topics(self) -> List[Dict[str, Any]]:
+    def list_topics(self, **kwargs) -> List[Dict[str, Any]]:
         """List all available Allora Network topics"""
         try:
             return self._make_request('get_all_topics')
