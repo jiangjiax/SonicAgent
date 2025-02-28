@@ -7,8 +7,7 @@ logger = logging.getLogger("actions.token_info_actions")
 
 class TokenInfoHandler:
     _cache = {
-        'hot_tokens': None,
-        'last_update': None
+        'hot_tokens': None
     }
     CACHE_DURATION = timedelta(hours=1)
 
@@ -32,15 +31,12 @@ class TokenInfoHandler:
     @staticmethod
     def get_hot_tokens(limit: int = 10) -> list:
         """Get hot tokens on Sonic chain sorted by 24h volume"""
-        # 检查缓存是否有效
-        now = datetime.now()
-        if (TokenInfoHandler._cache['hot_tokens'] is not None and 
-            TokenInfoHandler._cache['last_update'] is not None and
-            now - TokenInfoHandler._cache['last_update'] < TokenInfoHandler.CACHE_DURATION):
-            logger.info("Returning cached hot tokens data")
-            return TokenInfoHandler._cache['hot_tokens'][:limit]
-
         try:
+            # 检查缓存是否有效
+            if TokenInfoHandler._cache['hot_tokens'] is not None:
+                logger.info("Returning cached hot tokens data")
+                return TokenInfoHandler._cache['hot_tokens'][:limit]
+
             # 如果缓存无效，则请求新数据
             response = requests.get(
                 "https://api.dexscreener.com/latest/dex/search",
@@ -132,13 +128,11 @@ class TokenInfoHandler:
             
             # 更新缓存
             TokenInfoHandler._cache['hot_tokens'] = sorted_tokens
-            TokenInfoHandler._cache['last_update'] = now
             
             return sorted_tokens[:limit]
             
         except Exception as e:
             logger.error(f"Failed to get hot tokens: {e}")
-            # 如果请求失败但有缓存数据，返回缓存的数据
             if TokenInfoHandler._cache['hot_tokens'] is not None:
                 logger.info("Returning cached data after API request failure")
                 return TokenInfoHandler._cache['hot_tokens'][:limit]

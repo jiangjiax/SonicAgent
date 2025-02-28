@@ -9,9 +9,9 @@ Visit the web interface at: https://sonic-token-safe.vercel.app
 
 1. Install dependencies:
 
-    ```bash
-    poetry install --no-root
-    ```
+```bash
+poetry install --no-root
+```
 
 2. Configure your environment variables:
 
@@ -23,9 +23,9 @@ Visit the web interface at: https://sonic-token-safe.vercel.app
 
 3. Start the application:
 
-    ```bash
-    poetry run python main.py
-    ```
+```bash
+poetry run python main.py
+```
 
 ## Web Interface
 
