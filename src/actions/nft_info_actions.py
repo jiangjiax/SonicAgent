@@ -34,7 +34,6 @@ class NFTInfoHandler:
     def get_hot_nfts(limit: int = 10, base_url: str = "https://paintswap.io/sonic/collections/") -> list:
         """Get hot NFT collections from PaintSwap API"""
         if NFTInfoHandler._cache['hot_nfts'] is not {} and NFTInfoHandler._cache['hot_nfts'] is not None:
-            logger.info(NFTInfoHandler._cache['hot_nfts'])
             return NFTInfoHandler._cache['hot_nfts'][:limit]
 
         try:
