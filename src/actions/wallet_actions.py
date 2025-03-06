@@ -295,11 +295,11 @@ class WalletActionHandler:
             
             # 确定风险等级
             if score >= 80:
-                risk_level = "LOW"
+                risk_level = "HIGH"
             elif score >= 60:
                 risk_level = "MEDIUM"
             elif score >= 40:
-                risk_level = "HIGH"
+                risk_level = "LOW"
             else:
                 risk_level = "CRITICAL"
             

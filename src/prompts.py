@@ -34,7 +34,6 @@ Supported operation types include:
 - check-token-security: Check token contract security
 - get-hot-nfts: Get hot NFT collections
 - get-nft-info: Get NFT collection information by address
-- transfer: Transfer tokens to another address
 - list-topics: List all available Allora prediction topics
 - get-inference: Get prediction for a specific Allora topic (requires topic_id)
 

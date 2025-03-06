@@ -8,11 +8,6 @@ from decimal import Decimal, getcontext
 logger = logging.getLogger("actions.nft_info_actions")
 
 class NFTInfoHandler:
-    _cache = {
-        'hot_nfts': None     # 存储热门 NFT 数据
-    }
-    CACHE_DURATION = timedelta(hours=1)  # 缓存有效期为1小时
-
     @staticmethod
     def handle_hot_nfts(limit: int = 10) -> str:
         """Handle get-hot-nfts action and return user-friendly text"""
@@ -33,11 +28,8 @@ class NFTInfoHandler:
     @staticmethod
     def get_hot_nfts(limit: int = 10, base_url: str = "https://paintswap.io/sonic/collections/") -> list:
         """Get hot NFT collections from PaintSwap API"""
-        if NFTInfoHandler._cache['hot_nfts'] is not {} and NFTInfoHandler._cache['hot_nfts'] is not None:
-            return NFTInfoHandler._cache['hot_nfts'][:limit]
-
         try:
-            # If no cache, request new data
+            # 直接请求数据
             response = requests.get(
                 "https://api.paintswap.finance/v2/collections",
                 params={"orderDirection": "desc", "numToFetch": limit, "orderBy": "volumeLast24Hours"}
@@ -47,9 +39,6 @@ class NFTInfoHandler:
             data = response.json()
             collections = data.get('collections', [])
             
-            # Update cache
-            NFTInfoHandler._cache['hot_nfts'] = collections
-            
             # Add URL to each NFT collection
             for collection in collections:
                 collection['url'] = f"{base_url}{collection['name']}"
@@ -58,9 +47,6 @@ class NFTInfoHandler:
             
         except Exception as e:
             logger.error(f"Failed to get hot NFTs: {e}")
-            if NFTInfoHandler._cache['hot_nfts'] is not {} and NFTInfoHandler._cache['hot_nfts'] is not None:
-                logger.info("Returning cached data after API request failure")
-                return NFTInfoHandler._cache['hot_nfts'][:limit]
             raise Exception(f"Failed to get hot NFTs: {e}")
 
     @staticmethod

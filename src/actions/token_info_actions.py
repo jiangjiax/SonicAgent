@@ -6,11 +6,6 @@ from datetime import datetime, timedelta
 logger = logging.getLogger("actions.token_info_actions")
 
 class TokenInfoHandler:
-    _cache = {
-        'hot_tokens': None
-    }
-    CACHE_DURATION = timedelta(hours=1)
-
     @staticmethod
     def handle_hot_tokens(limit: int = 10) -> str:
         """Handle get-hot-tokens action and return user-friendly text in English"""
@@ -32,12 +27,7 @@ class TokenInfoHandler:
     def get_hot_tokens(limit: int = 10) -> list:
         """Get hot tokens on Sonic chain sorted by 24h volume"""
         try:
-            # 检查缓存是否有效
-            if TokenInfoHandler._cache['hot_tokens'] is not None:
-                logger.info("Returning cached hot tokens data")
-                return TokenInfoHandler._cache['hot_tokens'][:limit]
-
-            # 如果缓存无效，则请求新数据
+            # 直接请求数据
             response = requests.get(
                 "https://api.dexscreener.com/latest/dex/search",
                 params={"q": "dyorswap wagmi shadow-exchange silverswap sonic"}
@@ -69,26 +59,6 @@ class TokenInfoHandler:
                 except (ValueError, TypeError):
                     liquidity = 0
                 
-                # 获取交易对信息
-                # pair_info = {
-                #     'pair_address': pair.get('pairAddress'),
-                #     'dex': pair.get('dexId'),
-                #     'volume_24h': volume_24h,
-                #     'liquidity_usd': liquidity,
-                #     'price_usd': pair.get('priceUsd'),
-                #     'price_native': pair.get('priceNative'),
-                #     'price_change_24h': pair.get('priceChange', {}).get('h24'),
-                #     'transactions_24h': pair.get('txns', {}).get('h24', {}),
-                #     'base_token': pair.get('baseToken', {}).get('symbol'),
-                #     'quote_token': pair.get('quoteToken', {}).get('symbol'),
-                #     'websites': pair.get('info', {}).get('websites', []),
-                #     'socials': pair.get('info', {}).get('socials', []),
-                #     'imageUrl': pair.get('info', {}).get('imageUrl', []),
-                #     'description': pair.get('info', {}).get('description'),
-                #     'chainId': pair.get('chainId'),
-                #     'url': pair.get('url'),
-                # }
-                
                 # 处理 baseToken
                 base = pair.get('baseToken', {})
                 base_address = base.get('address')
@@ -108,7 +78,6 @@ class TokenInfoHandler:
                         'imageUrl': pair.get('info', {}).get('imageUrl', []),
                         'marketCap': pair.get('marketCap'),
                         'priceChange_h24': pair.get('priceChange', {}).get('h24'),
-                        # 'pairs': []
                     }
                 
                 # 更新代币信息
@@ -117,7 +86,6 @@ class TokenInfoHandler:
                     tokens_info[base_address]['max_liquidity_usd'],
                     liquidity
                 )
-                # tokens_info[base_address]['pairs'].append(pair_info)
             
             # 按24小时交易量排序
             sorted_tokens = sorted(
@@ -126,16 +94,10 @@ class TokenInfoHandler:
                 reverse=True
             )
             
-            # 更新缓存
-            TokenInfoHandler._cache['hot_tokens'] = sorted_tokens
-            
             return sorted_tokens[:limit]
             
         except Exception as e:
             logger.error(f"Failed to get hot tokens: {e}")
-            if TokenInfoHandler._cache['hot_tokens'] is not None:
-                logger.info("Returning cached data after API request failure")
-                return TokenInfoHandler._cache['hot_tokens'][:limit]
             raise Exception(f"Failed to get hot tokens: {e}")
 
     @staticmethod
