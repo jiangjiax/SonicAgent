@@ -5,6 +5,8 @@ SonicTokenSafe is a Web3 security tool built on the ZerePy framework that helps 
 
 Visit the web interface at: https://sonic-token-safe.vercel.app
 
+Visit the front-end libraries at: https://github.com/fedavinci/defai-chat
+
 ## Getting Started
 
 1. Install dependencies:
